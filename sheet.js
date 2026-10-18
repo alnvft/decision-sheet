@@ -21,7 +21,9 @@
 #ds-all:focus{border-color:var(--border-strong)!important}
 .ds-c{font-size:12px;color:var(--text-muted);white-space:nowrap}
 #ds-go{display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;height:26px!important;min-height:0!important;margin:0!important;padding:0 14px!important;line-height:1!important;font-family:inherit!important;font-size:13px!important;border:0.5px solid var(--border-strong)!important;border-radius:var(--radius)!important;background:var(--surface-2)!important;color:var(--text-primary)!important;cursor:pointer}
-.ds-err{font-size:13px;color:var(--text-danger)}`;
+#ds-go:disabled{opacity:.5;cursor:default}
+.ds-err{font-size:13px;color:var(--text-danger)}
+.ds-err.ds-ok{color:var(--text-muted)}`;
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -97,12 +99,24 @@
     cnt();
 
     A.oninput = () => { grow(); mark(); E.textContent = ''; };
-    root.querySelector('#ds-go').onclick = () => {
+    const go = root.querySelector('#ds-go');
+    go.onclick = () => {
       const L = [...s.children].map(q => q.dataset.k + '：' + (v[q.dataset.k] || ''));
       const empty = new RegExp('^' + P + '\\d+：\\s*$');
       const a = A.value.split('\n').filter(l => l.trim() && !empty.test(l)).join('\n').trim();
-      if (!Object.keys(v).length && !a) { E.textContent = '一つ以上回答してください'; return; }
-      sendPrompt(L.join('\n') + (a ? '\n備考：\n' + a : ''));
+      if (!Object.keys(v).length && !a) { E.classList.remove('ds-ok'); E.textContent = '一つ以上回答してください'; return; }
+      // 押したことがすぐ分かるようにボタンを薄くし、書き写しにかかった時間を出す
+      const t0 = performance.now();
+      const done = (msg, ok) => { E.classList.toggle('ds-ok', ok); E.textContent = msg; go.disabled = false; };
+      go.disabled = true;
+      E.classList.add('ds-ok'); E.textContent = '書き写し中…';
+      try {
+        Promise.resolve(sendPrompt(L.join('\n') + (a ? '\n備考：\n' + a : ''))).then(
+          () => done('入力欄に書き写しました（' + Math.round(performance.now() - t0) + 'ms）。Enterで送信してください', true),
+          e => done('書き写しに失敗しました：' + e, false));
+      } catch (e) {
+        done('書き写しに失敗しました：' + e.message, false);
+      }
     };
   };
 

@@ -2,7 +2,7 @@
 // 使い方: <div id="ds"></div> と
 //   <script type="application/json" id="ds-data">{"P":"Q","D":[["見出し","空白の理由",["選択肢1","選択肢2"]]]}</script>
 //   を置いてからこのファイルを読み込む（sheet(P, D, el) で直接描くこともできる）
-// 送信すると「Q1：2」形式の行と備考を sendPrompt でチャット入力欄へ渡す
+// コピーを押すと「Q1：2」形式の行と備考をクリップボードに入れる（貼り付けと送信はユーザーが行う）
 (() => {
   const CSS = `
 .ds-root{font-family:"Anthropic Sans","Yu Gothic UI","Meiryo UI",system-ui,sans-serif}
@@ -23,7 +23,8 @@
 #ds-go{display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;height:26px!important;min-height:0!important;margin:0!important;padding:0 14px!important;line-height:1!important;font-family:inherit!important;font-size:13px!important;border:0.5px solid var(--border-strong)!important;border-radius:var(--radius)!important;background:var(--surface-2)!important;color:var(--text-primary)!important;cursor:pointer}
 #ds-go:disabled{opacity:.5;cursor:default}
 .ds-err{font-size:13px;color:var(--text-danger)}
-.ds-err.ds-ok{color:var(--text-muted)}`;
+.ds-err.ds-ok{color:var(--text-muted)}
+.ds-man{display:block;width:100%;box-sizing:border-box;margin-top:4px;font-family:inherit;font-size:13px;line-height:1.5;padding:4px 8px;border:0.5px solid var(--border-strong);border-radius:4px;background:var(--surface-2);color:var(--text-primary);resize:none}`;
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -38,7 +39,7 @@
       '<h2 class="sr-only">判断事項の回答シート。各設問で一つ選ぶか却下し、備考は最下部の欄にまとめて書いて送信する。</h2>' +
       '<div class="ds-s"></div>' +
       '<div class="ds-f"><textarea id="ds-all" placeholder="全体の備考（Enterで改行。＋備考で設問番号が入る）"></textarea>' +
-      '<span class="ds-c"></span><button type="button" id="ds-go">送信</button></div>' +
+      '<span class="ds-c"></span><button type="button" id="ds-go">コピー</button></div>' +
       '<div class="ds-err"></div>';
     el.textContent = '';
     el.dataset.done = '1';
@@ -105,18 +106,32 @@
       const empty = new RegExp('^' + P + '\\d+：\\s*$');
       const a = A.value.split('\n').filter(l => l.trim() && !empty.test(l)).join('\n').trim();
       if (!Object.keys(v).length && !a) { E.classList.remove('ds-ok'); E.textContent = '一つ以上回答してください'; return; }
-      // 押したことがすぐ分かるようにボタンを薄くし、書き写しにかかった時間を出す
-      const t0 = performance.now();
-      const done = (msg, ok) => { E.classList.toggle('ds-ok', ok); E.textContent = msg; go.disabled = false; };
+      const text = L.join('\n') + (a ? '\n備考：\n' + a : '');
       go.disabled = true;
-      E.classList.add('ds-ok'); E.textContent = '書き写し中…';
-      try {
-        Promise.resolve(sendPrompt(L.join('\n') + (a ? '\n備考：\n' + a : ''))).then(
-          () => done('入力欄に書き写しました（' + Math.round(performance.now() - t0) + 'ms）。Enterで送信してください', true),
-          e => done('書き写しに失敗しました：' + e, false));
-      } catch (e) {
-        done('書き写しに失敗しました：' + e.message, false);
-      }
+      copy(text).then(ok => {
+        go.disabled = false;
+        root.querySelector('.ds-man')?.remove();
+        E.classList.add('ds-ok');
+        if (ok) { E.textContent = 'コピーしました。入力欄に貼り付けて送信してください'; return; }
+        // 自動でコピーできないときは、選択済みの欄に出して手でコピーしてもらう
+        E.textContent = '自動でコピーできませんでした。下の欄が選択された状態なので、Ctrl+C でコピーしてください';
+        const m = document.createElement('textarea');
+        m.className = 'ds-man'; m.readOnly = true; m.rows = text.split('\n').length; m.value = text;
+        root.appendChild(m); m.focus(); m.select();
+      });
+    };
+
+    // クリップボードAPIが使えなければ execCommand で試す
+    const copy = async t => {
+      try { await navigator.clipboard.writeText(t); return true; } catch (e) { /* 次の方法へ */ }
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.readOnly = true;
+      ta.style.cssText = 'position:absolute;left:-9999px;top:0';
+      root.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
     };
   };
 

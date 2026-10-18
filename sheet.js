@@ -5,6 +5,7 @@
 // 送信すると「Q1：2」形式の行と備考を sendPrompt でチャット入力欄へ渡す
 (() => {
   const CSS = `
+.ds-root{font-family:"Anthropic Sans","Yu Gothic UI","Meiryo UI",system-ui,sans-serif}
 .ds-q{margin:0 0 10px}
 .ds-h{font-size:14px;font-weight:500;line-height:1.6;color:var(--text-primary)}
 .ds-h small{font-weight:400;font-size:13px;color:var(--text-secondary)}
@@ -19,7 +20,7 @@
 #ds-all{flex:1!important;box-sizing:border-box!important;min-height:63px!important;height:63px;margin:0!important;padding:4px 8px!important;font-family:inherit!important;font-size:14px!important;line-height:1.5!important;border:0.5px solid var(--border)!important;border-radius:4px!important;background:var(--surface-2)!important;color:var(--text-primary)!important;resize:none!important;outline:none!important;overflow:hidden!important}
 #ds-all:focus{border-color:var(--border-strong)!important}
 .ds-c{font-size:12px;color:var(--text-muted);white-space:nowrap}
-#ds-go{height:26px;padding:0 14px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-2);color:var(--text-primary);font-size:13px;cursor:pointer}
+#ds-go{display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;height:26px!important;min-height:0!important;margin:0!important;padding:0 14px!important;line-height:1!important;font-family:inherit!important;font-size:13px!important;border:0.5px solid var(--border-strong)!important;border-radius:var(--radius)!important;background:var(--surface-2)!important;color:var(--text-primary)!important;cursor:pointer}
 .ds-err{font-size:13px;color:var(--text-danger)}`;
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -30,6 +31,7 @@
     document.head.appendChild(st);
 
     const root = document.createElement('div');
+    root.className = 'ds-root';
     root.innerHTML =
       '<h2 class="sr-only">判断事項の回答シート。各設問で一つ選ぶか却下し、備考は最下部の欄にまとめて書いて送信する。</h2>' +
       '<div class="ds-s"></div>' +

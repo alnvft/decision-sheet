@@ -13,14 +13,14 @@ body{background:#141414;color:var(--text-primary);font-family:system-ui,sans-ser
 </head>
 <body>
 <script>window.sendPrompt = t => { document.getElementById('out').textContent = t; };</script>
-<script src="sheet.js"></script>
-<script>
-sheet("Q", [
-  ["港の灯台を誰が管理するか", "§3で灯台の存在だけ決まり、管理者が未定", ["港湾組合が管理する。灯台守は組合員の持ち回り", "教会が管理する。点灯を祈りの儀式として扱う", "灯台守の一家が代々世襲する"]],
-  ["霧笛の鳴らし方", "Q1で管理者が決まるまで保留していた", ["決まった時刻に鳴らし、時報を兼ねる", "霧が出たときだけ鳴らす"]],
-  ["<b>タグ</b>が混じった見出し", "表示が崩れないかの確認用", ["a < b & c > d", "\"引用符\"入り"]]
-]);
-document.body.insertAdjacentHTML('beforeend', '<div id="out"></div>');
-</script>
+<div id="ds">シートを読み込み中…</div>
+<script type="application/json" id="ds-data">{"P":"Q","D":[
+["港の灯台を誰が管理するか","§3で灯台の存在だけ決まり、管理者が未定",["港湾組合が管理する。灯台守は組合員の持ち回り","教会が管理する。点灯を祈りの儀式として扱う","灯台守の一家が代々世襲する"]],
+["霧笛の鳴らし方","Q1で管理者が決まるまで保留していた",["決まった時刻に鳴らし、時報を兼ねる","霧が出たときだけ鳴らす"]],
+["<b>タグ</b>が混じった見出し","表示が崩れないかの確認用",["a < b & c > d","\"引用符\"入り"]]
+]}</script>
+<!-- async で読み込み順が前後しても描画されるかを確かめる -->
+<script async src="sheet.js"></script>
+<div id="out"></div>
 </body>
 </html>

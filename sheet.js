@@ -1,5 +1,7 @@
 // 判断事項の回答シート（Claude の show_widget 用）
-// 使い方: sheet("Q", [["見出し", "空白の理由", ["選択肢1", "選択肢2"]], ...])
+// 使い方: <div id="ds"></div> と
+//   <script type="application/json" id="ds-data">{"P":"Q","D":[["見出し","空白の理由",["選択肢1","選択肢2"]]]}</script>
+//   を置いてからこのファイルを読み込む（sheet(P, D, el) で直接描くこともできる）
 // 送信すると「Q1：2」形式の行と備考を sendPrompt でチャット入力欄へ渡す
 (() => {
   const CSS = `
@@ -22,7 +24,7 @@
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.sheet = (P, D) => {
+  const render = (el, P, D) => {
     const st = document.createElement('style');
     st.textContent = CSS;
     document.head.appendChild(st);
@@ -34,7 +36,9 @@
       '<div class="ds-f"><textarea id="ds-all" placeholder="全体の備考（Enterで改行。＋備考で設問番号が入る）"></textarea>' +
       '<span class="ds-c"></span><button type="button" id="ds-go">送信</button></div>' +
       '<div class="ds-err"></div>';
-    document.body.appendChild(root);
+    el.textContent = '';
+    el.dataset.done = '1';
+    el.appendChild(root);
 
     const s = root.querySelector('.ds-s'), A = root.querySelector('#ds-all'),
       C = root.querySelector('.ds-c'), E = root.querySelector('.ds-err'), v = {};
@@ -99,4 +103,20 @@
       sendPrompt(L.join('\n') + (a ? '\n備考：\n' + a : ''));
     };
   };
+
+  window.sheet = (P, D, el) => render(el || document.getElementById('ds') || document.body, P, D);
+
+  // #ds と #ds-data があれば、読み込み順に関係なく描画する
+  const run = () => {
+    const el = document.getElementById('ds'), dt = document.getElementById('ds-data');
+    if (!el || !dt || el.dataset.done) return;
+    try {
+      const { P, D } = JSON.parse(dt.textContent);
+      render(el, P, D);
+    } catch (e) {
+      el.textContent = '設問データを読めませんでした：' + e.message;
+    }
+  };
+  run();
+  document.addEventListener('DOMContentLoaded', run);
 })();

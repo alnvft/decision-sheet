@@ -1,7 +1,8 @@
 // 判断事項の回答シート（Claude の show_widget 用）
 // 使い方: <div id="ds"></div> と
 //   <script type="application/json" id="ds-data">{"P":"Q","D":[["見出し","空白の理由",["選択肢1","選択肢2"]]]}</script>
-//   を置いてからこのファイルを読み込む（sheet(P, D, el) で直接描くこともできる）
+//   を置いてからこのファイルを読み込む（sheet(P, D, el, S) で直接描くこともできる）
+// "S" は開始番号（省略時は1）。設問の4番目の要素に番号を書くと、その設問はその番号で表示する
 // コピーを押すと「Q1：2」形式の行と備考をクリップボードに入れる（貼り付けと送信はユーザーが行う）
 (() => {
   const CSS = `
@@ -29,7 +30,7 @@
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  const render = (el, P, D) => {
+  const render = (el, P, D, S = 1) => {
     const st = document.createElement('style');
     st.textContent = CSS;
     document.head.appendChild(st);
@@ -71,8 +72,10 @@
       A.focus(); A.setSelectionRange(p, p);
     };
 
-    D.forEach(([t, w, o], i) => {
-      const k = P + (i + 1), q = document.createElement('div');
+    // 番号を指定した設問はその番号、指定のない設問は S から順に振る
+    let n = S;
+    D.forEach(([t, w, o, num]) => {
+      const k = P + (num ?? n++), q = document.createElement('div');
       q.className = 'ds-q'; q.dataset.k = k;
       q.innerHTML =
         '<div class="ds-h">' + k + '：' + esc(t) + (w ? ' <small>（' + esc(w) + '）</small>' : '') +
@@ -142,15 +145,15 @@
     };
   };
 
-  window.sheet = (P, D, el) => render(el || document.getElementById('ds') || document.body, P, D);
+  window.sheet = (P, D, el, S) => render(el || document.getElementById('ds') || document.body, P, D, S);
 
   // #ds と #ds-data があれば、読み込み順に関係なく描画する
   const run = () => {
     const el = document.getElementById('ds'), dt = document.getElementById('ds-data');
     if (!el || !dt || el.dataset.done) return;
     try {
-      const { P, D } = JSON.parse(dt.textContent);
-      render(el, P, D);
+      const { P, D, S } = JSON.parse(dt.textContent);
+      render(el, P, D, S);
     } catch (e) {
       el.textContent = '設問データを読めませんでした：' + e.message;
     }

@@ -7,6 +7,7 @@
   const CSS = `
 .ds-root{font-family:"Anthropic Sans","Yu Gothic UI","Meiryo UI",system-ui,sans-serif}
 .ds-q{margin:0 0 10px}
+.ds-q:first-child{padding-right:48px}
 .ds-h{font-size:14px;font-weight:500;line-height:1.6;color:var(--text-primary)}
 .ds-h small{font-weight:400;font-size:13px;color:var(--text-secondary)}
 .ds-o{display:flex;align-items:baseline;gap:6px;padding:0 0 0 2px;font-size:14px;line-height:1.55;color:var(--text-primary);cursor:pointer}
@@ -102,10 +103,16 @@
     A.oninput = () => { grow(); mark(); E.textContent = ''; };
     const go = root.querySelector('#ds-go');
     go.onclick = () => {
-      const L = [...s.children].map(q => q.dataset.k + '：' + (v[q.dataset.k] || ''));
-      const empty = new RegExp('^' + P + '\\d+：\\s*$');
-      const a = A.value.split('\n').filter(l => l.trim() && !empty.test(l)).join('\n').trim();
-      if (!Object.keys(v).length && !a) { E.classList.remove('ds-ok'); E.textContent = '一つ以上回答してください'; return; }
+      // 「Qn：〜」の備考は該当設問の行に括弧で入れ、番号のない行だけ末尾の備考に残す
+      const keys = [...s.children].map(q => q.dataset.k), kr = new RegExp('^(' + P + '\\d+)：(.*)$'), N = {}, rest = [];
+      A.value.split('\n').forEach(l => {
+        const m = l.match(kr);
+        if (m && keys.includes(m[1])) { const t = m[2].trim(); if (t) N[m[1]] = N[m[1]] ? N[m[1]] + ' / ' + t : t; }
+        else if (l.trim()) rest.push(l);
+      });
+      const a = rest.join('\n').trim();
+      if (!Object.keys(v).length && !a && !Object.keys(N).length) { E.classList.remove('ds-ok'); E.textContent = '一つ以上回答してください'; return; }
+      const L = keys.map(k => k + '：' + (v[k] || '') + (N[k] ? '（' + N[k] + '）' : ''));
       const text = L.join('\n') + (a ? '\n備考：\n' + a : '');
       go.disabled = true;
       copy(text).then(ok => {

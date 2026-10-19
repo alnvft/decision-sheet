@@ -103,7 +103,7 @@
     A.oninput = () => { grow(); mark(); E.textContent = ''; };
     const go = root.querySelector('#ds-go');
     go.onclick = () => {
-      // 「Qn：〜」の備考は該当設問の行に括弧で入れ、番号のない行だけ末尾の備考に残す
+      // 「Qn：〜」の備考は該当設問の行に半角スペースで続け、番号のない行だけ末尾の備考に残す
       const keys = [...s.children].map(q => q.dataset.k), kr = new RegExp('^(' + P + '\\d+)：(.*)$'), N = {}, rest = [];
       A.value.split('\n').forEach(l => {
         const m = l.match(kr);
@@ -112,7 +112,7 @@
       });
       const a = rest.join('\n').trim();
       if (!Object.keys(v).length && !a && !Object.keys(N).length) { E.classList.remove('ds-ok'); E.textContent = '一つ以上回答してください'; return; }
-      const L = keys.map(k => k + '：' + (v[k] || '') + (N[k] ? '（' + N[k] + '）' : ''));
+      const L = keys.map(k => k + '：' + [v[k], N[k]].filter(Boolean).join(' '));
       const text = L.join('\n') + (a ? '\n備考：\n' + a : '');
       go.disabled = true;
       copy(text).then(ok => {
